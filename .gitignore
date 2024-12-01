@@ -1,0 +1,9 @@
+# ignore cache, backups and zips for kicad base station
+base_station/kicad/base_station/base_station-backups
+base_station/kicad/base_station/fp-info-cache
+base_station/kicad/base_station/*.zip
+
+# ignore cache, backups and zips for kicad sensor nodes
+sensor_node/kicad/sensor_node/sensor_node-backups
+sensor_node/kicad/sensor_node/fp-info-cache
+sensor_node/kicad/sensor_node/*.zip
