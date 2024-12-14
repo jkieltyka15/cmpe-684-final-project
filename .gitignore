@@ -7,3 +7,9 @@ base_station/kicad/base_station/*.zip
 sensor_node/kicad/sensor_node/sensor_node-backups
 sensor_node/kicad/sensor_node/fp-info-cache
 sensor_node/kicad/sensor_node/*.zip
+
+# ignore PlatformIO project configurations
+*.pio
+
+# ignore vs code configurations
+*.vscode
