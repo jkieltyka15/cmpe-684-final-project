@@ -102,7 +102,7 @@ void loop() {
 
             // verify message is for node
             if (node.get_id() != msg.get_rx_id()) {
-                WARN("Messaged intended for Node " + msg.get_rx_id() + " not Node " + node.get_id());
+                WARN("Message intended for Node " + msg.get_rx_id() + " not Node " + node.get_id());
             }
 
             // react accordingly based on message type
