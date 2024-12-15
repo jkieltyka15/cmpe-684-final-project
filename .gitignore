@@ -10,6 +10,7 @@ sensor_node/kicad/sensor_node/*.zip
 
 # ignore PlatformIO project configurations
 *.pio
+*/arduino/.gitignore
 
 # ignore vs code configurations
 *.vscode

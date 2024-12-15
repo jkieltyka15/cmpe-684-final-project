@@ -5,28 +5,84 @@
 * @author: jkieltyka15
 */
 
+// standard libraries
 #include <Arduino.h>
+#include <stdlib.h>
 #include <Wire.h>
+#include <Adafruit_VL6180X.h>
 
-#include "Adafruit_VL6180X.h"
+// local libraries
+#include <Log.h>
+#include <Message.h>
 
+// local dependencies
 #include "sensornode.hpp"
-#include "log.hpp"
 
 
-SensorNode::SensorNode() {
+// number of channels between a valid node channel
+#define RF24_CHANNEL_SPACING 5
 
+// default reading pipe for the NRF24L01
+#define RF24_READING_PIPE 0
+
+// maximum number of attempts to send a message
+#define MAX_SEND_ATTEMPTS 3
+
+// delay between sending message attempts
+#define FAILED_SEND_DELAY_MS 500
+
+
+SensorNode::SensorNode(uint8_t node_id) {
+
+    this->node_id = node_id;
+
+    this->radio_address = this->calculate_radio_address(node_id);
+    this->radio_channel = this->calculate_radio_channel(node_id);
+}
+
+
+uint32_t SensorNode::calculate_radio_address(uint8_t node_id) {
+
+    const byte address_bytes[RF24_ADDRESS_WIDTH] = { node_id, node_id, node_id, node_id };
+
+    uint32_t address = 0;
+    memcpy(&address, address_bytes, sizeof(address));
+    
+    return address; 
+}
+
+
+uint8_t SensorNode::calculate_radio_channel(uint8_t node_id) {
+
+    return node_id * RF24_CHANNEL_SPACING;
 }
 
 
 bool SensorNode::init() {
 
-    // boot ToF sensor
+    // start ToF sensor
     if (false == sensor.begin()) {
 
-        ERROR("Failed to boot ToF sensor")
+        ERROR("Failed to start ToF sensor")
         return false;
     }
+
+    // start radio
+    if (false == radio.begin()) {
+
+        ERROR("Failed to start radio")
+        return false;
+    }
+
+    // configure radio
+    radio.setAutoAck(true);
+    radio.setAddressWidth(RF24_ADDRESS_WIDTH);
+    radio.setPALevel(RF24_PA_MAX);
+    radio.setChannel(this->radio_channel);
+    radio.openReadingPipe(RF24_READING_PIPE, this->radio_address);
+
+    // start listening on radio
+    radio.startListening();
 
     return true;
 }
@@ -77,4 +133,79 @@ bool SensorNode::is_sensor_status_changed() {
     }
 
     return true;
+}
+
+
+bool SensorNode::transmit_update(UpdateMessage* msg) {
+
+    bool is_sent = false;
+
+    // calculate receiver node's radio configuration
+    uint8_t rx_id = msg->get_rx_id();
+    uint32_t rx_address = this->calculate_radio_address(rx_id);
+    uint8_t rx_channel = this->calculate_radio_channel(rx_id);
+
+    // stop listening
+    this->radio.stopListening();
+    this->radio.closeReadingPipe(RF24_READING_PIPE);
+
+    // configure radio to send to receiver node
+    this->radio.setChannel(rx_channel);
+    radio.openWritingPipe(rx_address);
+
+    // attempt to transmit message
+    for (uint32_t i = 0; i < MAX_SEND_ATTEMPTS; i++) {
+
+        // successfully transmitted message
+        if (true == this->radio.write(&msg, sizeof(msg))) {
+            is_sent = true;
+            break;
+        }
+
+        // failed to transmit message
+        delay(FAILED_SEND_DELAY_MS);
+    }
+
+    // switch back to this node's radio configuration
+    this->radio.setChannel(this->radio_channel);
+    radio.openReadingPipe(RF24_READING_PIPE, this->radio_address);
+
+    // start listening again
+    this->radio.startListening();
+
+    return is_sent;
+}
+
+
+bool SensorNode::transmit_update(uint8_t rx_node_id) {
+
+    // create update message
+    bool is_vacant = (this->sensor_status == VACANT);
+    UpdateMessage msg = UpdateMessage(rx_node_id, this->node_id, this->node_id, is_vacant);
+
+    // attempt to transmit message
+    return this->transmit_update(&msg);
+}
+
+
+bool SensorNode::is_message() {
+
+    return this->radio.available();
+}
+
+
+bool SensorNode::read_message(uint8_t* buffer, uint8_t len) {
+
+    if (false == this->radio.available()) {
+        return false;
+    }
+
+    this->radio.read(buffer, len);
+    return true;
+}
+
+
+uint8_t SensorNode::get_id() {
+
+    return this->node_id;
 }
