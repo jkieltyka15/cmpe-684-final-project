@@ -13,10 +13,17 @@
 #include "updatemessage.hpp"
 
 
+UpdateMessage::UpdateMessage() : Message() {
+
+    this->node_id = 0;
+    this->is_vacant = false;
+}
+
+
 UpdateMessage::UpdateMessage(uint8_t rx_id,
                              uint8_t tx_id,
                              uint8_t node_id,
-                             bool is_vacant) : Message(rx_id, tx_id, UPDATE) {
+                             bool is_vacant) : Message(rx_id, tx_id, MESSAGE_UPDATE) {
 
     this->node_id = node_id;
     this->is_vacant = is_vacant;

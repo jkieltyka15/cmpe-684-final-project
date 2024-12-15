@@ -20,7 +20,7 @@ class UpdateMessage : public Message {
     private:
 
         uint8_t node_id = 0;
-        bool is_vacant = true;
+        uint8_t is_vacant = true;
 
 
     public:
@@ -34,6 +34,7 @@ class UpdateMessage : public Message {
          * @param is_vacant: Node's vacancy status
          */
         UpdateMessage(uint8_t rx_id, uint8_t tx_id, uint8_t node_id, bool is_vacant);
+        UpdateMessage();
 
         /**
          * @brief Gets the ID of the node who is reporting its status

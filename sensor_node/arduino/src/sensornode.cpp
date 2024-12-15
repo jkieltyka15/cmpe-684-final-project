@@ -19,17 +19,13 @@
 #include "sensornode.hpp"
 
 
-// number of channels between a valid node channel
-#define RF24_CHANNEL_SPACING 5
 
-// default reading pipe for the NRF24L01
-#define RF24_READING_PIPE 0
+#define RF24_CHANNEL_SPACING 5  // number of channels between a valid node channel
+#define RF24_READING_PIPE 0     // default reading pipe for the NRF24L01
 
-// maximum number of attempts to send a message
-#define MAX_SEND_ATTEMPTS 3
 
-// delay between sending message attempts
-#define FAILED_SEND_DELAY_MS 500
+#define MAX_SEND_ATTEMPTS 15            // maximum number of attempts to send a message
+#define FAILED_SEND_DELAY_MIN_MS 0      // minimum delay between sending message attempts in milliseconds
 
 
 SensorNode::SensorNode(uint8_t node_id) {
@@ -76,6 +72,8 @@ bool SensorNode::init() {
 
     // configure radio
     radio.setAutoAck(true);
+    radio.enableAckPayload();
+    radio.setRetries(FAILED_SEND_DELAY_MIN_MS, MAX_SEND_ATTEMPTS);
     radio.setAddressWidth(RF24_ADDRESS_WIDTH);
     radio.setPALevel(RF24_PA_MAX);
     radio.setChannel(this->radio_channel);
@@ -138,8 +136,6 @@ bool SensorNode::is_sensor_status_changed() {
 
 bool SensorNode::transmit_update(UpdateMessage* msg) {
 
-    bool is_sent = false;
-
     // calculate receiver node's radio configuration
     uint8_t rx_id = msg->get_rx_id();
     uint32_t rx_address = this->calculate_radio_address(rx_id);
@@ -153,18 +149,12 @@ bool SensorNode::transmit_update(UpdateMessage* msg) {
     this->radio.setChannel(rx_channel);
     radio.openWritingPipe(rx_address);
 
+    // create a copy of the message to send
+    uint8_t buffer[sizeof(*msg)];
+    memcpy(buffer, msg, sizeof(buffer));
+
     // attempt to transmit message
-    for (uint32_t i = 0; i < MAX_SEND_ATTEMPTS; i++) {
-
-        // successfully transmitted message
-        if (true == this->radio.write(&msg, sizeof(msg))) {
-            is_sent = true;
-            break;
-        }
-
-        // failed to transmit message
-        delay(FAILED_SEND_DELAY_MS);
-    }
+    bool is_sent = this->radio.write(&buffer, sizeof(buffer));
 
     // switch back to this node's radio configuration
     this->radio.setChannel(this->radio_channel);
@@ -194,7 +184,7 @@ bool SensorNode::is_message() {
 }
 
 
-bool SensorNode::read_message(uint8_t* buffer, uint8_t len) {
+bool SensorNode::read_message(uint8_t** buffer, uint8_t len) {
 
     if (false == this->radio.available()) {
         return false;

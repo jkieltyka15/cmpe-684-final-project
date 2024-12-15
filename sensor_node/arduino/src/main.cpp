@@ -25,7 +25,7 @@
 #define SERIAL_BAUD 9600
 
 // delay in main loop in milliseconds
-#define MAIN_LOOP_DELAY_MS 500
+#define MAIN_LOOP_DELAY_MS 100
 
 // size of message buffer
 #define MSG_BUFFER_SIZE 32
@@ -83,40 +83,46 @@ void loop() {
         uint8_t buffer[MSG_BUFFER_SIZE];
         memset(buffer, 0, sizeof(buffer));
 
-        if (false == node.read_message(buffer, (uint8_t)sizeof(buffer))) {
+        if (false == node.read_message((uint8_t**)(&buffer), (uint8_t)sizeof(buffer))) {
             ERROR("Failed to read message");
         }
 
         else {
 
+            INFO("" + (int)buffer[0] + " " + (int)buffer[1] +  " " + (int)buffer[2] + " " + (int)buffer[3] +  " " + (int)buffer[4])
+
             // convert buffer to Message
-            Message* msg = (Message*)buffer;
+            Message msg = Message();
+            memcpy(&msg, buffer, sizeof(msg));
 
             // verify message is for node
-            if (node.get_id() != msg->get_rx_id()) {
-                WARN("Messaged intended for Node " + msg->get_rx_id() + " not Node " + node.get_id());
+            if (node.get_id() != msg.get_rx_id()) {
+                WARN("Messaged intended for Node " + msg.get_rx_id() + " not Node " + node.get_id());
             }
 
             // react accordingly based on message type
             else {
 
-                message_t type = msg->get_type();
+                INFO("Received UPDATE message from Node " + msg.get_tx_id())
+
+                uint8_t type = msg.get_type();
                 switch(type) {
 
-                    case UPDATE: {
+                    case MESSAGE_UPDATE: {
 
-                        INFO("Received UPDATE message from Node " + msg->get_tx_id())
+                        INFO("Received UPDATE message from Node " + msg.get_tx_id())
                         
-                        // convert Message to UpdateMessage
-                        UpdateMessage* update_msg = (UpdateMessage*)msg;
+                        // convert buffer to UpdateMessage
+                        UpdateMessage update_msg = UpdateMessage();
+                        memcpy(&update_msg, buffer, sizeof(update_msg));
 
                         // determine recepient
                         uint8_t rx_id = node.get_id() - 1;
 
                         // create new message to forward
                         uint8_t tx_id = node.get_id();
-                        uint8_t node_id = update_msg->get_node_id();
-                        bool is_vacant = update_msg->get_is_vacant();
+                        uint8_t node_id = update_msg.get_node_id();
+                        bool is_vacant = update_msg.get_is_vacant();
                         UpdateMessage new_msg = UpdateMessage(rx_id, tx_id, node_id, is_vacant);
 
                         // forward the message

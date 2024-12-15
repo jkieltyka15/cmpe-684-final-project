@@ -134,7 +134,7 @@ class SensorNode {
          * @param size: size of buffer
          * @return Number of bytes read
          */
-        bool read_message(uint8_t* buffer, uint8_t size);
+        bool read_message(uint8_t** buffer, uint8_t size);
 
         /**
          * @brief Get the ID of the node

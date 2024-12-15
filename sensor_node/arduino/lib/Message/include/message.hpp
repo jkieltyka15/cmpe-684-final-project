@@ -11,21 +11,16 @@
 // standard libraries
 #include <Arduino.h>
 
-
-// message types
-enum message_t {
-    UNKNOWN = 0,
-    UPDATE = 1
-};
-
+#define MESSAGE_UNKNOWN 0
+#define MESSAGE_UPDATE 1
 
 class Message {
 
     private:
 
-        uint8_t rx_id = 0;              // receiving node's ID
-        uint8_t tx_id = 0;              // transmitting node's ID
-        message_t msg_type = UNKNOWN;   // message type
+        uint8_t rx_id = 0;                  // receiving node's ID
+        uint8_t tx_id = 0;                  // transmitting node's ID
+        uint8_t msg_type = MESSAGE_UNKNOWN; // message type
         
 
     public:
@@ -37,7 +32,8 @@ class Message {
          * @param tx_id: ID of transmitting node
          * @param msg_type: type of message
          */
-        Message(uint8_t rx_id, uint8_t tx_id, message_t msg_type);
+        Message(uint8_t rx_id, uint8_t tx_id, uint8_t msg_type);
+        Message();
 
         /**
          * @brief Gets the receiving node's ID
@@ -58,7 +54,7 @@ class Message {
          * 
          * @return Type of message
          */
-        message_t get_type();
+        uint8_t get_type();
 };
 
 #endif // _MESSAGE_HPP_
