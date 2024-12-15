@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <Wire.h>
 #include <Adafruit_VL6180X.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
 // local libraries
 #include <Log.h>
@@ -17,7 +19,6 @@
 
 // local dependencies
 #include "sensornode.hpp"
-
 
 
 #define RF24_CHANNEL_SPACING 5  // number of channels between a valid node channel

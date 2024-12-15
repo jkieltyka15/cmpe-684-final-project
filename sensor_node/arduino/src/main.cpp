@@ -16,6 +16,7 @@
 
 // local dependencies
 #include "sensornode.hpp"
+#include "parkingmap.hpp"
 
 
 // unique ID for node
@@ -68,12 +69,19 @@ void loop() {
     if (true == node.is_sensor_status_changed()) {
 
         // determine recepient
-        uint8_t rx_id = node.get_id() - 1;
+        int16_t rx_id = get_next_ingress_node(node.get_id());
 
-        // transmit update
-        if (false == node.transmit_update(rx_id)) {
+        // no recepient available
+        if (0 > rx_id) {
+            WARN("Nobody to send update to")
+        }
 
-            ERROR("Failed to transmit update message")
+        else {
+            // transmit update
+            if (false == node.transmit_update((uint8_t)rx_id)) {
+
+                ERROR("Failed to transmit update message to Node " + rx_id)
+            }
         }
     }
 
@@ -88,9 +96,6 @@ void loop() {
         }
 
         else {
-
-            INFO("" + (int)buffer[0] + " " + (int)buffer[1] +  " " + (int)buffer[2] + " " + (int)buffer[3] +  " " + (int)buffer[4])
-
             // convert buffer to Message
             Message msg = Message();
             memcpy(&msg, buffer, sizeof(msg));
@@ -102,8 +107,6 @@ void loop() {
 
             // react accordingly based on message type
             else {
-
-                INFO("Received UPDATE message from Node " + msg.get_tx_id())
 
                 uint8_t type = msg.get_type();
                 switch(type) {
@@ -117,17 +120,24 @@ void loop() {
                         memcpy(&update_msg, buffer, sizeof(update_msg));
 
                         // determine recepient
-                        uint8_t rx_id = node.get_id() - 1;
+                        int16_t rx_id = get_next_ingress_node(node.get_id());
 
-                        // create new message to forward
-                        uint8_t tx_id = node.get_id();
-                        uint8_t node_id = update_msg.get_node_id();
-                        bool is_vacant = update_msg.get_is_vacant();
-                        UpdateMessage new_msg = UpdateMessage(rx_id, tx_id, node_id, is_vacant);
+                        // no recepient available
+                        if (0 > rx_id) {
+                            WARN("Nobody to send update to")
+                        }
 
-                        // forward the message
-                        if (false == node.transmit_update(&new_msg)) {
-                            ERROR("Failed to transmit update message")
+                        else {
+                            // create new message to forward
+                            uint8_t tx_id = node.get_id();
+                            uint8_t node_id = update_msg.get_node_id();
+                            bool is_vacant = update_msg.get_is_vacant();
+                            UpdateMessage new_msg = UpdateMessage(rx_id, tx_id, node_id, is_vacant);
+
+                            // forward the message
+                            if (false == node.transmit_update(&new_msg)) {
+                                ERROR("Failed to transmit update message to " + rx_id)
+                            }
                         }
 
                         break;
