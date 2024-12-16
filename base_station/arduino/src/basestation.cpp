@@ -98,3 +98,32 @@ uint8_t BaseStation::get_id() {
 
     return this->node_id;
 }
+
+
+bool BaseStation::is_valid_sensor_node(uint8_t node_id) {
+
+    return node_id <= SENSOR_NODE_NUM && node_id != this->node_id;
+}
+
+
+bool BaseStation::update_node_status(uint8_t node_id, bool is_vacant) {
+
+    // provided node id is not valid
+    if (false == this->is_valid_sensor_node(node_id)) {
+        return false;
+    }
+
+    this->node_status[node_id - 1] = is_vacant;
+
+    return true;
+}
+
+bool BaseStation::get_node_status(uint8_t node_id) {
+
+    // provided node id is not valid
+    if (false == this->is_valid_sensor_node(node_id)) {
+        return false;
+    }
+
+    return this->node_status[node_id - 1];
+}

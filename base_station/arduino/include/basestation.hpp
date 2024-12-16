@@ -17,6 +17,7 @@
 // local libraries
 #include <Message.h>
 
+#define SENSOR_NODE_NUM 10  // number of sensor nodes
 
 #define RF24_CE_PIN 6   // NRF24L01 CE pin assignment
 #define RF24_CSN_PIN 8  // NRF24L01 CSN pin assignment
@@ -31,6 +32,9 @@ class BaseStation {
 
         // unique id of the base station
         uint8_t node_id = 0;
+
+        // array to track sensor node statuses
+        bool node_status[SENSOR_NODE_NUM] = {0};
 
         // NRF24L01 transciever radio
         RF24 radio = RF24(RF24_CE_PIN, RF24_CSN_PIN);
@@ -93,6 +97,31 @@ class BaseStation {
          * @return ID of the node
          */
         uint8_t get_id();
+
+        /**
+         * @brief Determines if the provided node ID is valid
+         * 
+         * @param node_id: node ID to be evaluated
+         * @return True if node ID is valid. Otherwise false
+         */
+        bool is_valid_sensor_node(uint8_t node_id);
+
+        /**
+         * @brief Update the vacancy status of a node
+         * 
+         * @param node_id: ID of node to update vacancy status
+         * @param is_vacant: New vacancy status of node
+         * @return True if successfully updated. Otherwise false
+         */
+        bool update_node_status(uint8_t node_id, bool is_vacant);
+
+        /**
+         * @brief Get the vacancy status of a node
+         * 
+         * @param node_id: ID of node to get vacancy status
+         * @return The node's vacancy status
+         */
+        bool get_node_status(uint8_t node_id);
 };
 
 #endif /* _BASE_STATION_HPP_ */

@@ -31,7 +31,7 @@
 
 
 // base station of WSN
-BaseStation node = BaseStation(BASE_STATION);
+BaseStation base_station = BaseStation(BASE_STATION);
 
 
 /**
@@ -42,7 +42,7 @@ void setup() {
     Serial.begin(SERIAL_BAUD);
   
     // initialize the sensor node
-    if (false == node.init()) {
+    if (false == base_station.init()) {
 
         ERROR("Failed to initialize sensor node. Check hardware")
 
@@ -62,12 +62,12 @@ void setup() {
  */
 void loop() {
 
-    if(true == node.is_message()) {
+    if(true == base_station.is_message()) {
 
         uint8_t buffer[MSG_BUFFER_SIZE];
         memset(buffer, 0, sizeof(buffer));
 
-        if (false == node.read_message((uint8_t**)(&buffer), (uint8_t)sizeof(buffer))) {
+        if (false == base_station.read_message((uint8_t**)(&buffer), (uint8_t)sizeof(buffer))) {
             ERROR("Failed to read message");
         }
 
@@ -77,8 +77,13 @@ void loop() {
             memcpy(&msg, buffer, sizeof(msg));
 
             // verify message is for base station
-            if (node.get_id() != msg.get_rx_id()) {
-                WARN("Messaged intended for Node " + msg.get_rx_id() + " not Node " + node.get_id());
+            if (base_station.get_id() != msg.get_rx_id()) {
+                WARN("Messaged intended for Node " + msg.get_rx_id() + " not Node " + base_station.get_id());
+            }
+
+            // verify sender has a valid ID
+            else if(false == base_station.is_valid_sensor_node(msg.get_tx_id())) {
+                WARN("Message was from invalid Node " + msg.get_tx_id());
             }
 
             // react accordingly based on message type
@@ -94,6 +99,29 @@ void loop() {
                         // convert buffer to UpdateMessage
                         UpdateMessage update_msg = UpdateMessage();
                         memcpy(&update_msg, buffer, sizeof(update_msg));
+
+                        uint8_t node_id = update_msg.get_node_id();
+                        bool is_vacant = update_msg.get_is_vacant();
+
+                        // verify node to update has a valid ID
+                        if(false == base_station.is_valid_sensor_node(node_id)) {
+                            WARN("Cannot update status of invalid Node " + node_id);
+                        }
+
+                        else {
+                            // update the status of the reporting node
+                            (void) base_station.update_node_status(node_id, is_vacant);
+                            
+                            // node status is vacant
+                            if (true == is_vacant) {
+                                INFO("Node " + node_id + " is now vacant")
+                            }
+
+                            // node status is occupied
+                            else {
+                                INFO("Node " + node_id + " is now occupied")
+                            }
+                        }
 
                         break;
                     }
