@@ -122,6 +122,13 @@ class BaseStation {
          * @return The node's vacancy status
          */
         bool get_node_status(uint8_t node_id);
+
+        /**
+         * @brief Counts the number of nodes with vacant status
+         * 
+         * @return Number of nodes with vacant status
+         */
+        uint8_t num_vacant();
 };
 
 #endif /* _BASE_STATION_HPP_ */

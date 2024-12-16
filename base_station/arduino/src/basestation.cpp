@@ -73,6 +73,11 @@ bool BaseStation::init() {
     // start listening on radio
     radio.startListening();
 
+    // assuming status of all sensor nodes are vacant on initialization
+    for (uint8_t i; i < sizeof(this->node_status); i++) {
+        this->node_status[i] = true;
+    }
+
     return true;
 }
 
@@ -126,4 +131,21 @@ bool BaseStation::get_node_status(uint8_t node_id) {
     }
 
     return this->node_status[node_id - 1];
+}
+
+
+uint8_t BaseStation::num_vacant() {
+
+    uint8_t num_vacant = 0;
+
+    // count number of vacant statuses
+    for (uint8_t i = 0; i < sizeof(this->node_status); i++) {
+
+        // status is vacant
+        if (true == node_status[i]) {
+            num_vacant++;
+        }
+    }
+
+    return num_vacant;
 }
