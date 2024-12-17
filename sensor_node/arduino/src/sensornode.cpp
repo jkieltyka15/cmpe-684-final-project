@@ -34,6 +34,13 @@
 #define FAILED_SEND_DELAY 15    // minimum delay between sending message attempts
 
 
+// minimum time to wait if the channel is busy before sending in milliseconds
+#define CHANNEL_BUSY_DELAY_MIN_MS 50
+
+// maximum time to wait if the channel is busy before sending in milliseconds
+#define CHANNEL_BUSY_DELAY_MAX_MS 200
+
+
 SensorNode::SensorNode(uint8_t node_id) {
 
     this->node_id = node_id;
@@ -154,12 +161,23 @@ bool SensorNode::transmit_update(UpdateMessage* msg) {
     uint32_t rx_address = this->calculate_radio_address(rx_id);
     uint8_t rx_channel = this->calculate_radio_channel(rx_id);
 
+    // switch to receiver node's channel
+    this->radio.setChannel(rx_channel);
+
+    // wait for there to be no traffic on receiver's channel
+    while (true == this->radio.testCarrier()) {
+
+        // delay a random amount of time to avoid collisions
+        uint32_t channel_delay = random(CHANNEL_BUSY_DELAY_MIN_MS, CHANNEL_BUSY_DELAY_MAX_MS);
+        INFO("Channel " + rx_channel + " is busy. Waiting " + channel_delay + " ms")
+        delay(channel_delay);
+    }
+
     // stop listening
     this->radio.stopListening();
     this->radio.closeReadingPipe(RF24_READING_PIPE);
 
-    // configure radio to send to receiver node
-    this->radio.setChannel(rx_channel);
+    // create pipe to receiver node
     radio.openWritingPipe(rx_address);
 
     // create a copy of the message to send
