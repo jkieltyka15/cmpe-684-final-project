@@ -25,8 +25,13 @@
 // baud rate for serial connection
 #define SERIAL_BAUD 9600
 
-// delay in main loop in milliseconds
-#define MAIN_LOOP_DELAY_MS 100
+
+#define MAIN_LOOP_DELAY_MIN_MS 100  // minimum delay in main loop in milliseconds
+#define MAIN_LOOP_DELAY_MAX_MS 200  // maximum delay in main loop in milliseconds
+
+// number of loop iterations without transmitting a message
+// before sending out a heartbeat
+#define LOOPS_BEFORE_HEARTBEAT 50
 
 // size of message buffer
 #define MSG_BUFFER_SIZE 32
@@ -35,6 +40,9 @@
 // parking sensor node
 SensorNode node = SensorNode(NODE_ID);
 
+// counter for tracking loop iterations since the last
+// message was transmitted
+uint8_t loops_since_last_transmission = 0;
 
 /**
  * @brief Initialize all necessary objects and variables.
@@ -65,8 +73,12 @@ void setup() {
  */
 void loop() {
 
-    // determine if parking space status has changed
-    if (true == node.is_sensor_status_changed()) {
+    // track iterations since last transmission
+    loops_since_last_transmission++;
+
+    // determine if parking space status has changed or time for heartbeat
+    if ((true == node.is_sensor_status_changed())
+        || LOOPS_BEFORE_HEARTBEAT <= loops_since_last_transmission) {
 
         // determine recepient
         int16_t rx_id = get_next_ingress_node(node.get_id());
@@ -79,9 +91,21 @@ void loop() {
         else {
             // transmit update
             if (false == node.transmit_update((uint8_t)rx_id)) {
-
                 ERROR("Failed to transmit update message to Node " + rx_id)
             }
+
+            // heartbeat message successfully sent
+            else if (LOOPS_BEFORE_HEARTBEAT <= loops_since_last_transmission) {
+                INFO("heartbeat update message sent to Node " + + rx_id)
+            }
+
+            // update message successfully sent
+            else {
+                INFO("update message sent to Node " + + rx_id)
+            }
+
+            // reset heartbeat iteration counter
+            loops_since_last_transmission = 0;
         }
     }
 
@@ -138,6 +162,9 @@ void loop() {
                             if (false == node.transmit_update(&new_msg)) {
                                 ERROR("Failed to transmit update message to " + rx_id)
                             }
+
+                            // reset heartbeat iteration counter
+                            loops_since_last_transmission = 0;
                         }
 
                         break;
@@ -153,6 +180,6 @@ void loop() {
 
     // nothing to do
     else {
-        delay(MAIN_LOOP_DELAY_MS);
+        delay(random(MAIN_LOOP_DELAY_MIN_MS, MAIN_LOOP_DELAY_MAX_MS));
     }
 }
