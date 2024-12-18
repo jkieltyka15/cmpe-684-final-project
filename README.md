@@ -1,6 +1,6 @@
 # Smart Wireless Sensor Network (WSN) Parking Lot
 ## Overview
-This repository is a collection of research, hardware implementation and software implementation for a smart parking lot that displays the vacancy status of each parking space. The scope of the project was limitted to ten spaces and is meant to be a proof of concept to satisfy the final project requirement for CMPE-684: Wireless Sensor Networks at the University of Maryland, Baltimore County.
+This repository is a collection of research, hardware implementations and software implementations for a smart parking lot that displays the vacancy status of each parking space. The scope of the project was limitted to ten spaces and is meant to be a proof of concept to satisfy the final project requirement for CMPE-684: Wireless Sensor Networks at the University of Maryland, Baltimore County.
 
 ## Hardware
 All PCB design files were created using KiCad and all stl files for 3D prints were developed using Autodesk TinyCAD. The filament used for the 3D prints is PLA.
