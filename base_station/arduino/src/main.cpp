@@ -9,13 +9,13 @@
 #include <Arduino.h>
 #include <stdlib.h>
 #include <Wire.h>
-#include <TVout.h>
 
 // local libraries
 #include <Log.h>
 
 // local dependencies
 #include "basestation.hpp"
+#include "parkingdisplay.hpp"
 
 
 // unique ID for base station
@@ -30,43 +30,9 @@
 // size of message buffer
 #define MSG_BUFFER_SIZE 32
 
-#define SCREEN_REGION NTSC // region of the display
-#define SCREEN_W      60   // width in pixels of the display
-#define SCREEN_H      48   // height in pixels of the display
-
-#define SCREEN_SQUARE_SIZE     10   // width and height of squares
-#define SCREEN_SQUARE_SPACE    2    // spacing in pixel between squares
-#define SCREEN_SQUARES_PER_ROW 5    // number of squares per row on the screen
-
 
 // base station of WSN
 BaseStation base_station = BaseStation(BASE_STATION);
-
-// node status screen
-TVout screen = TVout();
-
-/**
- * @brief updates the screen with the number of vacant parking spaces
- */
-void update_screen(uint8_t available_spaces) {
-
-    // clear the screen
-    screen.clear_screen();
-
-    for (int i = 0; i < available_spaces; i++) {
-
-        // calculate coordinates of square
-        int x = (i % SCREEN_SQUARES_PER_ROW) * (SCREEN_SQUARE_SIZE + SCREEN_SQUARE_SPACE);
-        int y = (i / SCREEN_SQUARES_PER_ROW) * (SCREEN_SQUARE_SIZE + SCREEN_SQUARE_SPACE);
-
-        // Draw each filled square by setting pixels
-        for (int16_t dy = 0; dy < SCREEN_SQUARE_SIZE; dy++) {
-            for (int16_t dx = 0; dx < SCREEN_SQUARE_SIZE; dx++) {
-                screen.set_pixel(x + dx, y + dy, WHITE);
-            }
-        }
-    }
-}
 
 
 /**
@@ -86,7 +52,7 @@ void setup() {
     }
 
     // intialize the screen
-    if (0 != screen.begin(SCREEN_REGION, SCREEN_W, SCREEN_H)) {
+    if (false == init_parking_display()) {
 
         ERROR("Failed to initialize screen. Check hardware")
 
@@ -94,11 +60,8 @@ void setup() {
         while(1);
     }
 
-    // clear the screen
-    screen.clear_screen();
-
-    // display initial status of parking spaces
-    update_screen(SENSOR_NODE_NUM);
+    // update screen to show the parking map
+    draw_parking_map();
 
     INFO("setup complete")
 }
@@ -174,8 +137,8 @@ void loop() {
                                 INFO("Node " + node_id + " is now occupied")
                             }
 
-                            // update the screen
-                            update_screen(base_station.num_vacant());
+                            // update the status of the parking space
+                            update_parking_space(node_id, is_vacant);
                         }
 
                         break;
