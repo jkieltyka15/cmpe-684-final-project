@@ -20,18 +20,18 @@
 
 
 // unique ID for node
-#define NODE_ID 1
+#define NODE_ID 10
 
 // baud rate for serial connection
 #define SERIAL_BAUD 9600
 
 
-#define MAIN_LOOP_DELAY_MIN_MS 100  // minimum delay in main loop in milliseconds
-#define MAIN_LOOP_DELAY_MAX_MS 200  // maximum delay in main loop in milliseconds
+#define MAIN_LOOP_DELAY_MIN_MS 75   // minimum delay in main loop in milliseconds
+#define MAIN_LOOP_DELAY_MAX_MS 150  // maximum delay in main loop in milliseconds
 
 // number of loop iterations without transmitting a message
 // before sending out a heartbeat
-#define LOOPS_BEFORE_HEARTBEAT 50
+#define LOOPS_BEFORE_HEARTBEAT 25
 
 // size of message buffer
 #define MSG_BUFFER_SIZE 32

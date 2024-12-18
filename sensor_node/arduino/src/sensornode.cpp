@@ -33,12 +33,14 @@
 #define MAX_SEND_ATTEMPTS 15    // maximum number of attempts to send a message
 #define FAILED_SEND_DELAY 15    // minimum delay between sending message attempts
 
+// number of attempts to wait for the channel to be open if it is busy
+#define CHANNEL_CHECKS_MAX  10
 
 // minimum time to wait if the channel is busy before sending in milliseconds
-#define CHANNEL_BUSY_DELAY_MIN_MS 50
+#define CHANNEL_BUSY_DELAY_MIN_MS 25
 
 // maximum time to wait if the channel is busy before sending in milliseconds
-#define CHANNEL_BUSY_DELAY_MAX_MS 200
+#define CHANNEL_BUSY_DELAY_MAX_MS 100
 
 
 SensorNode::SensorNode(uint8_t node_id) {
@@ -164,13 +166,32 @@ bool SensorNode::transmit_update(UpdateMessage* msg) {
     // switch to receiver node's channel
     this->radio.setChannel(rx_channel);
 
-    // wait for there to be no traffic on receiver's channel
-    while (true == this->radio.testCarrier()) {
+    // wait for there to be no traffic on receiver's channel or timeout occurs
+    bool is_channel_open = false;
+    for (uint8_t i = 0; i < CHANNEL_CHECKS_MAX; i++) {
+
+        // check if channel is open
+        is_channel_open = (false == this->radio.testCarrier());
+
+        // channel is open
+        if (true == is_channel_open) {
+            break;
+        }
 
         // delay a random amount of time to avoid collisions
         uint32_t channel_delay = random(CHANNEL_BUSY_DELAY_MIN_MS, CHANNEL_BUSY_DELAY_MAX_MS);
         INFO("Channel " + rx_channel + " is busy. Waiting " + channel_delay + " ms")
         delay(channel_delay);
+    }
+
+    // do not send message since channel has too much traffic
+    if (false == is_channel_open) {
+
+        // switch back to this node's radio configuration
+        this->radio.setChannel(this->radio_channel);
+        radio.openReadingPipe(RF24_READING_PIPE, this->radio_address);
+
+        return false;
     }
 
     // stop listening
